@@ -7,25 +7,29 @@ Zero-UI 3D digital human that replaces traditional chatbot interfaces with a rea
 
 ---
 
+## Current Status
+
+**Module 1 — 3D Stage & Expressive Avatar is live in the repository.**
+
+- Production studio lighting (key + fill + rim + ambient)
+- Ready Player Me full-body avatar with ARKit + Oculus Visemes morph targets
+- Subtle idle breathing + sway
+- Contact shadows + environment reflections
+- Clean immersive UI chrome
+- Zustand store + TypeScript types for the full cognitive loop already prepared
+
+---
+
 ## Locked MVP Scope (Strict)
 
 This repository enforces a **zero-cost, production-grade MVP**. No scope creep is allowed.
 
 ### In-Scope Modules
-1. **3D Stage & Expressive Avatar**  
-   Full-body Ready Player Me avatar in a studio-lit React Three Fiber scene with idle breathing, eye-blink loop, facial emotion blending, and camera framing.
-
-2. **Finite State Machine + The Phone Mechanic**  
-   Four animation states (`IDLE_LISTENING`, `THINKING`, `SPEAKING`, `TEXTING_PHONE`) with smooth crossfades. When text/code is required, the avatar raises a 3D smartphone while a Framer Motion mobile chat drawer slides up in perfect sync.
-
-3. **Real-Time Voice & Viseme Loop**  
-   Push-to-talk + hands-free VAD, TTS playback, and 60 fps wawa-lipsync driving Oculus visemes. Full barge-in (interruption) support.
-
-4. **Invisible Multi-API Cognitive Router**  
-   Single Next.js API endpoint that routes casual speech to low-latency models and code/technical tasks to stronger free models while preserving one persona. Returns structured JSON: `mode`, `emotion`, `animationState`, `spokenReply`, `phoneMessage`.
-
-5. **Unified Session Memory & Auth**  
-   Firebase Google Sign-In + Cloud Firestore. One conversation history shared seamlessly between voice and the in-world phone UI.
+1. **3D Stage & Expressive Avatar** ✅ (in progress)
+2. **Finite State Machine + The Phone Mechanic**
+3. **Real-Time Voice & Viseme Loop**
+4. **Invisible Multi-API Cognitive Router**
+5. **Unified Session Memory & Auth**
 
 ### Explicitly Out-of-Scope (Post-MVP only)
 - Custom user-uploaded avatars or in-app avatar editors
@@ -56,15 +60,21 @@ Graphics, animation smoothness, lip-sync fidelity, UI polish, and perceived late
 
 ---
 
-## Repository Status
+## How to Run Locally
 
-Actively developed by the R&D lead.  
-All implementation decisions are locked to the scope above.
+```bash
+git clone https://github.com/taimooraliwaris/presence.git
+cd presence
+npm install
+npm run dev
+```
 
-Repo: https://github.com/taimooraliwaris/presence
+Open http://localhost:3000 — you should see the avatar in a dark studio environment with subtle breathing animation.
 
 ---
 
-## License
+## Repository
 
-Private development for now. License will be decided at public launch.
+https://github.com/taimooraliwaris/presence
+
+Actively developed by the R&D lead. All implementation decisions are locked to the scope above.
