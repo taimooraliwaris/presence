@@ -1,7 +1,7 @@
 # Presence
 
 **Embodied Diegetic AI Platform**  
-Zero-UI 3D digital human that replaces traditional chatbot interfaces with a real-time conversational avatar. An invisible multi-LLM cognitive router powers a single consistent persona. When text or code is needed, the avatar physically pulls out a smartphone and opens a synchronized diegetic mobile chat drawer (“The Phone Mechanic”).
+Zero-UI 3D digital human powered by an invisible multi-LLM cognitive router.
 
 > “Stop prompting. Start talking.”
 
@@ -9,74 +9,55 @@ Zero-UI 3D digital human that replaces traditional chatbot interfaces with a rea
 
 ## Current Status
 
-**Module 1** ✅ complete foundation  
-**Module 2** ✅ Phone Mechanic + FSM body language (procedural poses; Mixamo clips next)
+| Module | Status |
+|--------|--------|
+| 1. 3D Stage & Expressive Avatar | ✅ |
+| 2. FSM + Phone Mechanic | ✅ |
+| 3. Real-Time Voice & Viseme Loop | ✅ |
+| 4. Invisible Multi-API Cognitive Router | pending |
+| 5. Unified Session Memory & Auth | pending |
 
 ### What works now
-- Studio-lit full-body avatar (TalkingHead, ARKit + Oculus visemes)
-- Eye-blink loop + emotion morphs
-- Animation FSM states: `IDLE_LISTENING` | `THINKING` | `SPEAKING` | `TEXTING_PHONE`
-- Procedural body language (head pitch, lean, sway) driven by FSM
-- **The Phone Mechanic** — Framer Motion slide-up chat drawer synced with avatar state
-- Floating phone toggle (bottom-right)
-- Shared message history between voice path and phone UI (store ready for Firestore)
+- Studio-lit avatar with ARKit + Oculus visemes
+- Eye-blink, emotion morphs, procedural body language from FSM
+- **Phone Mechanic** — slide-up chat drawer synced to avatar state
+- **Push-to-talk** mic (center bottom) — Web Speech STT
+- **Spoken replies** via browser TTS with **barge-in** (talking over the avatar stops speech)
+- **Lip-sync** — procedural jaw/visemes while speaking (wawa-lipsync ready for audio-element TTS later)
+- Shared message history in Zustand (voice + phone)
 
-**Note:** Ready Player Me CDN was discontinued Jan 2026. We use a free Mixamo-compatible avatar with the same morph standards.
-
----
-
-## Locked MVP Scope (Strict)
-
-### In-Scope Modules
-1. **3D Stage & Expressive Avatar** ✅
-2. **Finite State Machine + The Phone Mechanic** ✅ (procedural; Mixamo polish next)
-3. **Real-Time Voice & Viseme Loop**
-4. **Invisible Multi-API Cognitive Router**
-5. **Unified Session Memory & Auth**
-
-### Explicitly Out-of-Scope (Post-MVP only)
-- Custom avatar upload / in-app editors
-- Paid video avatar APIs (HeyGen, D-ID, Tavus)
-- Multi-agent rooms / model comparison grids
-- Native iOS / Android apps
-- Any paid API or hosting tier
-
----
-
-## Production-Grade Free Tech Stack
-
-| Layer | Technology | Notes |
-|-------|------------|-------|
-| Framework | Next.js 15 (App Router) | — |
-| 3D | React Three Fiber + Drei | Studio lighting |
-| Avatar | TalkingHead brunette.glb | ARKit 52 + Oculus Visemes |
-| UI motion | Framer Motion | Phone Mechanic drawer |
-| State | Zustand | Unified avatar + chat |
-| Lip-sync | wawa-lipsync `^0.0.2` | Module 3 |
-| STT / TTS | Web Speech + Google Cloud TTS free | Module 3 |
-| Router | Gemini Flash + Groq + OpenRouter free | Module 4 |
-| Auth / DB | Firebase Spark | Module 5 |
-| Hosting | Vercel free | — |
+Allow microphone permission when the browser asks.
 
 ---
 
 ## How to Run
 
 ```bash
-git clone https://github.com/taimooraliwaris/presence.git
-cd presence
 git pull
 npm install
 npm run dev
 ```
 
 Open http://localhost:3000  
-- Avatar should blink and breathe  
-- Tap the phone icon (bottom-right) to open the chat drawer  
-- Send a message → avatar enters THINKING then TEXTING_PHONE
+1. Click/hold the mic button and speak  
+2. Avatar thinks, then speaks with mouth motion  
+3. Use the phone icon for text mode  
+4. Interrupt speech anytime by pressing the mic again (barge-in)
+
+**Note:** Chrome/Edge recommended for Web Speech API. HTTPS or localhost required for mic access.
 
 ---
 
-## Repository
+## Locked MVP Scope
 
-https://github.com/taimooraliwaris/presence
+Zero paid APIs/hosting. Quality bar stays production-grade.
+
+Out of scope until post-MVP: custom avatars, paid video avatars, multi-agent rooms, native apps.
+
+---
+
+## Stack
+
+Next.js 15 · R3F · TalkingHead avatar · Framer Motion · Zustand · Web Speech · wawa-lipsync · (next: Gemini/Groq/OpenRouter free · Firebase Spark · Vercel)
+
+Repo: https://github.com/taimooraliwaris/presence
