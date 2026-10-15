@@ -14,19 +14,35 @@ Zero-UI 3D digital human powered by an invisible multi-LLM cognitive router.
 | 1. 3D Stage & Expressive Avatar | ✅ |
 | 2. FSM + Phone Mechanic | ✅ |
 | 3. Real-Time Voice & Viseme Loop | ✅ |
-| 4. Invisible Multi-API Cognitive Router | pending |
+| 4. Invisible Multi-API Cognitive Router | ✅ |
 | 5. Unified Session Memory & Auth | pending |
 
 ### What works now
-- Studio-lit avatar with ARKit + Oculus visemes
-- Eye-blink, emotion morphs, procedural body language from FSM
-- **Phone Mechanic** — slide-up chat drawer synced to avatar state
-- **Push-to-talk** mic (center bottom) — Web Speech STT
-- **Spoken replies** via browser TTS with **barge-in** (talking over the avatar stops speech)
-- **Lip-sync** — procedural jaw/visemes while speaking (wawa-lipsync ready for audio-element TTS later)
-- Shared message history in Zustand (voice + phone)
+- Full embodied loop: listen → think → speak with lip motion
+- Phone Mechanic for code / long answers
+- `/api/chat` router with single persona + structured JSON (`mode`, `emotion`, `animationState`, `spokenReply`, `phoneMessage`)
+- Free-tier backends: **Gemini** (primary) → **Groq** → **OpenRouter free**
+- Graceful fallback if no API keys are set
 
-Allow microphone permission when the browser asks.
+---
+
+## Setup API keys (free)
+
+```bash
+cp .env.example .env.local
+```
+
+Add **at least one**:
+
+| Key | Get it free at |
+|-----|----------------|
+| `GEMINI_API_KEY` | https://aistudio.google.com/apikey |
+| `GROQ_API_KEY` | https://console.groq.com/keys |
+| `OPENROUTER_API_KEY` | https://openrouter.ai/keys |
+
+Restart `npm run dev` after saving `.env.local`.
+
+Without keys the app still runs (local fallback replies).
 
 ---
 
@@ -39,25 +55,16 @@ npm run dev
 ```
 
 Open http://localhost:3000  
-1. Click/hold the mic button and speak  
-2. Avatar thinks, then speaks with mouth motion  
-3. Use the phone icon for text mode  
-4. Interrupt speech anytime by pressing the mic again (barge-in)
+- Mic: talk to Presence  
+- Phone icon: text / code mode  
+- Barge-in: press mic while speaking to interrupt
 
-**Note:** Chrome/Edge recommended for Web Speech API. HTTPS or localhost required for mic access.
+Chrome/Edge recommended. Mic needs localhost or HTTPS.
 
 ---
 
 ## Locked MVP Scope
 
-Zero paid APIs/hosting. Quality bar stays production-grade.
-
-Out of scope until post-MVP: custom avatars, paid video avatars, multi-agent rooms, native apps.
-
----
-
-## Stack
-
-Next.js 15 · R3F · TalkingHead avatar · Framer Motion · Zustand · Web Speech · wawa-lipsync · (next: Gemini/Groq/OpenRouter free · Firebase Spark · Vercel)
+Zero paid tiers. Module 5 next: Firebase Auth + Firestore unified memory.
 
 Repo: https://github.com/taimooraliwaris/presence
