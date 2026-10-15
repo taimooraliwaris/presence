@@ -3,12 +3,10 @@
 import { useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { usePresenceStore } from "@/lib/store";
+import { askPresence } from "@/lib/chat-client";
+import { speak } from "@/lib/voice";
+import { setProceduralSpeaking } from "@/lib/lipsync";
 
-/**
- * The Phone Mechanic — diegetic mobile chat HUD.
- * Slides up when the avatar enters TEXTING_PHONE / isPhoneOpen.
- * Shares the same conversation history as voice (unified memory).
- */
 export function PhoneMechanic() {
   const isPhoneOpen = usePresenceStore((s) => s.isPhoneOpen);
   const messages = usePresenceStore((s) => s.messages);
@@ -17,8 +15,10 @@ export function PhoneMechanic() {
   const addMessage = usePresenceStore((s) => s.addMessage);
   const setAnimationState = usePresenceStore((s) => s.setAnimationState);
   const setEmotion = usePresenceStore((s) => s.setEmotion);
+  const setSpeaking = usePresenceStore((s) => s.setSpeaking);
 
   const [draft, setDraft] = useState("");
+  const [busy, setBusy] = useState(false);
   const listRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -27,32 +27,54 @@ export function PhoneMechanic() {
     }
   }, [messages, isPhoneOpen]);
 
-  const handleSend = () => {
+  const handleSend = async () => {
     const text = draft.trim();
-    if (!text) return;
+    if (!text || busy) return;
 
     addMessage({ role: "user", content: text, channel: "phone" });
     setDraft("");
-
-    // Temporary local echo until Cognitive Router (Module 4) is wired
+    setBusy(true);
     setAnimationState("THINKING");
     setEmotion("thoughtful");
 
-    window.setTimeout(() => {
-      setAnimationState("TEXTING_PHONE");
-      setEmotion("neutral");
+    try {
+      const history = usePresenceStore.getState().messages;
+      const response = await askPresence(text, {
+        channel: "phone",
+        history,
+      });
+
+      setEmotion(response.emotion);
+      setAnimationState(
+        response.mode === "phone" ? "TEXTING_PHONE" : response.animationState
+      );
+
+      const phoneBody = response.phoneMessage || response.spokenReply;
       addMessage({
         role: "assistant",
-        content:
-          "Got it — the full cognitive router will answer here next. For now this is the Phone Mechanic shell.",
+        content: phoneBody,
         channel: "phone",
       });
-    }, 900);
+
+      // Optional short verbal ack while user reads the phone
+      if (response.spokenReply && response.spokenReply !== phoneBody) {
+        setSpeaking(true);
+        setProceduralSpeaking(true);
+        speak(response.spokenReply, {
+          onEnd: () => {
+            setSpeaking(false);
+            setProceduralSpeaking(false);
+            setAnimationState("TEXTING_PHONE");
+          },
+        });
+      }
+    } finally {
+      setBusy(false);
+    }
   };
 
   return (
     <>
-      {/* Floating phone toggle (always available) */}
       <button
         type="button"
         onClick={() => (isPhoneOpen ? closePhone() : openPhone())}
@@ -90,7 +112,6 @@ export function PhoneMechanic() {
             transition={{ type: "spring", stiffness: 320, damping: 32 }}
             className="pointer-events-auto absolute inset-x-0 bottom-0 z-30 mx-auto flex h-[58%] max-w-md flex-col overflow-hidden rounded-t-3xl border border-white/10 bg-[#0c0c14]/95 shadow-2xl backdrop-blur-xl sm:bottom-4 sm:h-[62%] sm:rounded-3xl"
           >
-            {/* Status bar */}
             <div className="flex items-center justify-between border-b border-white/10 px-5 py-3">
               <div className="flex items-center gap-2">
                 <div className="h-2 w-2 rounded-full bg-emerald-400/90" />
@@ -107,7 +128,6 @@ export function PhoneMechanic() {
               </button>
             </div>
 
-            {/* Messages */}
             <div
               ref={listRef}
               className="flex-1 space-y-3 overflow-y-auto px-4 py-4"
@@ -127,7 +147,7 @@ export function PhoneMechanic() {
                   }`}
                 >
                   <div
-                    className={`max-w-[82%] rounded-2xl px-3.5 py-2.5 text-sm leading-relaxed ${
+                    className={`max-w-[82%] rounded-2xl px-3.5 py-2.5 text-sm leading-relaxed whitespace-pre-wrap ${
                       m.role === "user"
                         ? "bg-indigo-500/90 text-white"
                         : "bg-white/10 text-white/90"
@@ -137,9 +157,11 @@ export function PhoneMechanic() {
                   </div>
                 </div>
               ))}
+              {busy && (
+                <p className="text-center text-xs text-white/30">Thinking…</p>
+              )}
             </div>
 
-            {/* Composer */}
             <div className="border-t border-white/10 p-3">
               <div className="flex items-end gap-2 rounded-2xl border border-white/10 bg-white/5 px-3 py-2">
                 <textarea
@@ -148,7 +170,7 @@ export function PhoneMechanic() {
                   onKeyDown={(e) => {
                     if (e.key === "Enter" && !e.shiftKey) {
                       e.preventDefault();
-                      handleSend();
+                      void handleSend();
                     }
                   }}
                   rows={1}
@@ -157,8 +179,8 @@ export function PhoneMechanic() {
                 />
                 <button
                   type="button"
-                  onClick={handleSend}
-                  disabled={!draft.trim()}
+                  onClick={() => void handleSend()}
+                  disabled={!draft.trim() || busy}
                   className="rounded-xl bg-indigo-500 px-3 py-1.5 text-xs font-medium text-white transition enabled:hover:bg-indigo-400 disabled:opacity-30"
                 >
                   Send
