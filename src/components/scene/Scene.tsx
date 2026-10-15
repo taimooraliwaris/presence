@@ -9,10 +9,30 @@ import {
 } from "@react-three/drei";
 import { Avatar } from "@/components/avatar/Avatar";
 import { StudioLighting } from "@/components/scene/StudioLighting";
+import { PhoneMechanic } from "@/components/phone/PhoneMechanic";
+import { usePresenceStore } from "@/lib/store";
+
+function StatusChip() {
+  const animationState = usePresenceStore((s) => s.animationState);
+  const emotion = usePresenceStore((s) => s.emotion);
+  const isPhoneOpen = usePresenceStore((s) => s.isPhoneOpen);
+
+  const label = isPhoneOpen
+    ? "TEXTING_PHONE"
+    : animationState.replace(/_/g, " ");
+
+  return (
+    <p className="rounded-full bg-black/50 px-4 py-2 text-xs text-white/45 backdrop-blur-md">
+      {label}
+      <span className="mx-2 text-white/20">·</span>
+      {emotion}
+    </p>
+  );
+}
 
 export default function Scene() {
   return (
-    <div className="h-full w-full">
+    <div className="relative h-full w-full">
       <Canvas
         shadows
         dpr={[1, 1.75]}
@@ -23,7 +43,6 @@ export default function Scene() {
         }}
         style={{ background: "#0a0a0f" }}
       >
-        {/* Tighter medium close-up framing on face / upper torso */}
         <PerspectiveCamera
           makeDefault
           position={[0, 1.55, 2.15]}
@@ -46,23 +65,24 @@ export default function Scene() {
         </Suspense>
       </Canvas>
 
-      {/* Minimal chrome — expands later with Phone Mechanic */}
+      {/* Overlay chrome */}
       <div className="pointer-events-none absolute inset-0 flex flex-col justify-between p-6">
         <div className="flex items-center justify-between">
           <h1 className="text-sm font-medium tracking-[0.22em] text-white/60">
             PRESENCE
           </h1>
           <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[10px] uppercase tracking-widest text-white/40">
-            Module 1
+            Module 2
           </span>
         </div>
 
-        <div className="flex justify-center">
-          <p className="rounded-full bg-black/50 px-4 py-2 text-xs text-white/45 backdrop-blur-md">
-            Idle · Eye-blink · Emotion morphs active
-          </p>
+        <div className="flex justify-center pb-16">
+          <StatusChip />
         </div>
       </div>
+
+      {/* Diegetic phone drawer + toggle */}
+      <PhoneMechanic />
     </div>
   );
 }
