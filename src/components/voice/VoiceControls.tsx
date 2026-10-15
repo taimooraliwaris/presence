@@ -9,11 +9,8 @@ import {
   speak,
 } from "@/lib/voice";
 import { setProceduralSpeaking } from "@/lib/lipsync";
+import { askPresence } from "@/lib/chat-client";
 
-/**
- * Push-to-talk control + interim transcript.
- * Full cognitive router arrives in Module 4 — for now a local spoken echo.
- */
 export function VoiceControls() {
   const [supported] = useState(() => isSpeechRecognitionSupported());
   const [listening, setListening] = useState(false);
@@ -21,52 +18,78 @@ export function VoiceControls() {
   const cancelRef = useRef<{ cancel: () => void } | null>(null);
 
   const addMessage = usePresenceStore((s) => s.addMessage);
+  const messages = usePresenceStore((s) => s.messages);
   const setAnimationState = usePresenceStore((s) => s.setAnimationState);
   const setEmotion = usePresenceStore((s) => s.setEmotion);
   const setListeningStore = usePresenceStore((s) => s.setListening);
   const setSpeaking = usePresenceStore((s) => s.setSpeaking);
+  const openPhone = usePresenceStore((s) => s.openPhone);
   const isPhoneOpen = usePresenceStore((s) => s.isPhoneOpen);
 
   const handleReply = useCallback(
-    (userText: string) => {
+    async (userText: string) => {
       addMessage({ role: "user", content: userText, channel: "voice" });
       setAnimationState("THINKING");
       setEmotion("thoughtful");
 
-      const reply = `I heard you say: ${userText}. The full AI router will power this reply next. For now the voice and lip-sync loop is live.`;
+      const history = usePresenceStore.getState().messages;
+      const response = await askPresence(userText, {
+        channel: "voice",
+        history,
+      });
 
-      window.setTimeout(() => {
-        setAnimationState("SPEAKING");
-        setEmotion("neutral");
-        setSpeaking(true);
-        setProceduralSpeaking(true);
+      setEmotion(response.emotion);
+      setAnimationState(response.animationState);
 
-        cancelRef.current = speak(reply, {
-          onStart: () => {
-            setSpeaking(true);
-            setProceduralSpeaking(true);
-          },
-          onEnd: () => {
-            setSpeaking(false);
-            setProceduralSpeaking(false);
+      if (response.mode === "phone" || response.phoneMessage) {
+        openPhone();
+        if (response.phoneMessage) {
+          addMessage({
+            role: "assistant",
+            content: response.phoneMessage,
+            channel: "phone",
+          });
+        }
+      }
+
+      const spoken = response.spokenReply;
+      setSpeaking(true);
+      setProceduralSpeaking(true);
+      setAnimationState(
+        response.mode === "phone" ? "TEXTING_PHONE" : "SPEAKING"
+      );
+
+      cancelRef.current = speak(spoken, {
+        onStart: () => {
+          setSpeaking(true);
+          setProceduralSpeaking(true);
+        },
+        onEnd: () => {
+          setSpeaking(false);
+          setProceduralSpeaking(false);
+          if (response.mode !== "phone") {
             setAnimationState("IDLE_LISTENING");
-            setEmotion("neutral");
-            addMessage({
-              role: "assistant",
-              content: reply,
-              channel: "voice",
-            });
-          },
-        });
-      }, 600);
+          }
+          addMessage({
+            role: "assistant",
+            content: spoken,
+            channel: "voice",
+          });
+        },
+      });
     },
-    [addMessage, setAnimationState, setEmotion, setSpeaking]
+    [
+      addMessage,
+      openPhone,
+      setAnimationState,
+      setEmotion,
+      setSpeaking,
+    ]
   );
 
   const startListening = async () => {
     if (!supported || listening) return;
 
-    // Barge-in: stop avatar speech immediately
     cancelRef.current?.cancel();
     cancelSpeech();
     setProceduralSpeaking(false);
@@ -82,7 +105,7 @@ export function VoiceControls() {
         onInterim: (t) => setInterim(t),
       });
       setInterim("");
-      if (text) handleReply(text);
+      if (text) await handleReply(text);
     } catch {
       setInterim("");
     } finally {
