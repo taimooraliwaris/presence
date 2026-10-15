@@ -5,15 +5,9 @@ import { useFrame } from "@react-three/fiber";
 import { useGLTF } from "@react-three/drei";
 import * as THREE from "three";
 import { usePresenceStore } from "@/lib/store";
+import { sampleVisemeWeights } from "@/lib/lipsync";
 import type { Emotion, AnimationState } from "@/types/presence";
 
-/**
- * Free full-body avatar with full ARKit 52 + Oculus 15 visemes.
- * Source: TalkingHead (met4citizen) — Mixamo-compatible rig.
- * Ready Player Me CDN discontinued Jan 2026.
- *
- * Body language is procedural until Mixamo clips are retargeted (Module 2).
- */
 const AVATAR_URL =
   "https://raw.githubusercontent.com/met4citizen/TalkingHead/main/avatars/brunette.glb";
 
@@ -57,7 +51,6 @@ const EMOTION_MORPHS: Record<Emotion, Record<string, number>> = {
   },
 };
 
-/** Target pose offsets driven by FSM state */
 const STATE_POSE: Record<
   AnimationState,
   { headPitch: number; lean: number; swayAmp: number }
@@ -161,7 +154,6 @@ export function Avatar() {
     const t = state.clock.getElapsedTime();
     const meshes = morphMeshes.current;
 
-    // Smoothly approach FSM pose targets
     const target = STATE_POSE[animationState] ?? STATE_POSE.IDLE_LISTENING;
     pose.current.headPitch = THREE.MathUtils.lerp(
       pose.current.headPitch,
@@ -179,14 +171,12 @@ export function Avatar() {
       0.08
     );
 
-    // Idle breathing + state-aware sway
     const breath = Math.sin(t * 1.15) * 0.006;
     group.current.position.y = -0.95 + breath;
     group.current.rotation.y =
       Math.sin(t * 0.28) * pose.current.swayAmp + pose.current.lean * 0.3;
     group.current.rotation.x = pose.current.lean * 0.15;
 
-    // Head pitch for TEXTING / THINKING
     if (headBone.current) {
       headBone.current.rotation.x = THREE.MathUtils.lerp(
         headBone.current.rotation.x,
@@ -195,7 +185,7 @@ export function Avatar() {
       );
     }
 
-    // Eye blink loop
+    // Eye blink
     blinkTimer.current += delta;
     if (!isBlinking.current && blinkTimer.current >= nextBlink.current) {
       isBlinking.current = true;
@@ -218,14 +208,19 @@ export function Avatar() {
     }
 
     // Emotion morphs
-    const targets = EMOTION_MORPHS[emotion] || {};
+    const emotionTargets = EMOTION_MORPHS[emotion] || {};
     const allEmotionKeys = new Set<string>();
     Object.values(EMOTION_MORPHS).forEach((m) =>
       Object.keys(m).forEach((k) => allEmotionKeys.add(k))
     );
     allEmotionKeys.forEach((key) => {
-      const val = targets[key] ?? 0;
-      setMorph(meshes, key, val, 0.08);
+      setMorph(meshes, key, emotionTargets[key] ?? 0, 0.08);
+    });
+
+    // Lip-sync / visemes (Module 3)
+    const visemes = sampleVisemeWeights(null, delta);
+    Object.entries(visemes).forEach(([name, value]) => {
+      setMorph(meshes, name, value, 0.22);
     });
   });
 
