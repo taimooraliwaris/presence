@@ -10,16 +10,23 @@ import {
 import { Avatar } from "@/components/avatar/Avatar";
 import { StudioLighting } from "@/components/scene/StudioLighting";
 import { PhoneMechanic } from "@/components/phone/PhoneMechanic";
+import { VoiceControls } from "@/components/voice/VoiceControls";
 import { usePresenceStore } from "@/lib/store";
 
 function StatusChip() {
   const animationState = usePresenceStore((s) => s.animationState);
   const emotion = usePresenceStore((s) => s.emotion);
   const isPhoneOpen = usePresenceStore((s) => s.isPhoneOpen);
+  const isListening = usePresenceStore((s) => s.isListening);
+  const isSpeaking = usePresenceStore((s) => s.isSpeaking);
 
   const label = isPhoneOpen
     ? "TEXTING_PHONE"
-    : animationState.replace(/_/g, " ");
+    : isListening
+      ? "LISTENING"
+      : isSpeaking
+        ? "SPEAKING"
+        : animationState.replace(/_/g, " ");
 
   return (
     <p className="rounded-full bg-black/50 px-4 py-2 text-xs text-white/45 backdrop-blur-md">
@@ -65,23 +72,22 @@ export default function Scene() {
         </Suspense>
       </Canvas>
 
-      {/* Overlay chrome */}
       <div className="pointer-events-none absolute inset-0 flex flex-col justify-between p-6">
         <div className="flex items-center justify-between">
           <h1 className="text-sm font-medium tracking-[0.22em] text-white/60">
             PRESENCE
           </h1>
           <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[10px] uppercase tracking-widest text-white/40">
-            Module 2
+            Module 3
           </span>
         </div>
 
-        <div className="flex justify-center pb-16">
+        <div className="flex justify-center pb-28">
           <StatusChip />
         </div>
       </div>
 
-      {/* Diegetic phone drawer + toggle */}
+      <VoiceControls />
       <PhoneMechanic />
     </div>
   );
