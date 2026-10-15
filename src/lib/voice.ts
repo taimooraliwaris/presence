@@ -1,7 +1,7 @@
 /**
  * Module 3 — Voice pipeline (100% free browser APIs)
  * STT: webkitSpeechRecognition / SpeechRecognition
- * TTS: speechSynthesis (Neural2/Google Cloud wired later behind same interface)
+ * TTS: speechSynthesis with female-voice preference (matches brunette avatar)
  */
 
 export type SpeechRecognitionLike = {
@@ -44,7 +44,47 @@ export function isSpeechSynthesisSupported() {
   return typeof window !== "undefined" && "speechSynthesis" in window;
 }
 
-/** Start push-to-talk / one-shot recognition. Returns final transcript. */
+/** Prefer natural female en-US voices (avatar is female). */
+function pickFemaleVoice(): SpeechSynthesisVoice | null {
+  if (!isSpeechSynthesisSupported()) return null;
+  const voices = window.speechSynthesis.getVoices();
+  if (!voices.length) return null;
+
+  const preferred = [
+    /google us english female/i,
+    /microsoft aria/i,
+    /microsoft jenny/i,
+    /microsoft zira/i,
+    /samantha/i,
+    /karen/i,
+    /moira/i,
+    /tessa/i,
+    /female/i,
+    /zira/i,
+    /aria/i,
+    /jenny/i,
+  ];
+
+  for (const re of preferred) {
+    const hit = voices.find((v) => re.test(v.name) && /en/i.test(v.lang));
+    if (hit) return hit;
+  }
+
+  const en = voices.filter((v) => /en/i.test(v.lang));
+  const notMale = en.find(
+    (v) => !/male|david|mark|guy|ryan|christopher|tony/i.test(v.name)
+  );
+  return notMale || en[0] || voices[0] || null;
+}
+
+function humanizeText(text: string): string {
+  return text
+    .replace(/\s+/g, " ")
+    .replace(/([,;:])/g, "$1 ")
+    .replace(/\s{2,}/g, " ")
+    .trim();
+}
+
 export function listenOnce(options?: {
   lang?: string;
   onInterim?: (text: string) => void;
@@ -89,7 +129,6 @@ export function listenOnce(options?: {
   });
 }
 
-/** Continuous recognition controller for hands-free mode */
 export function createContinuousListener(handlers: {
   onFinal: (text: string) => void;
   onInterim?: (text: string) => void;
@@ -120,7 +159,6 @@ export function createContinuousListener(handlers: {
   };
 
   recognition.onend = () => {
-    // Auto-restart while active (browser ends sessions periodically)
     if (active) {
       try {
         recognition.start();
@@ -150,7 +188,6 @@ export function createContinuousListener(handlers: {
   };
 }
 
-/** Speak text with barge-in support (cancel ongoing utterance). */
 export function speak(
   text: string,
   options?: {
@@ -166,19 +203,33 @@ export function speak(
     return { cancel: () => undefined };
   }
 
-  // Barge-in: stop anything currently speaking
   window.speechSynthesis.cancel();
 
-  const utter = new SpeechSynthesisUtterance(text);
-  utter.rate = options?.rate ?? 1.02;
-  utter.pitch = options?.pitch ?? 1;
+  const utter = new SpeechSynthesisUtterance(humanizeText(text));
+  utter.rate = options?.rate ?? 0.96;
+  utter.pitch = options?.pitch ?? 1.08;
   utter.lang = options?.lang ?? "en-US";
+
+  const applyVoice = () => {
+    const voice = pickFemaleVoice();
+    if (voice) utter.voice = voice;
+  };
+
+  applyVoice();
+  if (!window.speechSynthesis.getVoices().length) {
+    window.speechSynthesis.onvoiceschanged = () => {
+      applyVoice();
+    };
+  }
 
   utter.onstart = () => options?.onStart?.();
   utter.onend = () => options?.onEnd?.();
   utter.onerror = () => options?.onEnd?.();
 
-  window.speechSynthesis.speak(utter);
+  window.setTimeout(() => {
+    applyVoice();
+    window.speechSynthesis.speak(utter);
+  }, 40);
 
   return {
     cancel() {
@@ -192,4 +243,12 @@ export function cancelSpeech() {
   if (typeof window !== "undefined" && "speechSynthesis" in window) {
     window.speechSynthesis.cancel();
   }
+}
+
+export function warmVoices() {
+  if (!isSpeechSynthesisSupported()) return;
+  window.speechSynthesis.getVoices();
+  window.speechSynthesis.onvoiceschanged = () => {
+    window.speechSynthesis.getVoices();
+  };
 }
