@@ -1,7 +1,7 @@
 "use client";
 
 import { Canvas } from "@react-three/fiber";
-import { Suspense } from "react";
+import { Suspense, useEffect } from "react";
 import {
   Environment,
   ContactShadows,
@@ -9,9 +9,11 @@ import {
 } from "@react-three/drei";
 import { Avatar } from "@/components/avatar/Avatar";
 import { StudioLighting } from "@/components/scene/StudioLighting";
+import { StudioSet } from "@/components/scene/StudioSet";
 import { PhoneMechanic } from "@/components/phone/PhoneMechanic";
 import { VoiceControls } from "@/components/voice/VoiceControls";
 import { usePresenceStore } from "@/lib/store";
+import { warmVoices } from "@/lib/voice";
 
 function StatusChip() {
   const animationState = usePresenceStore((s) => s.animationState);
@@ -38,6 +40,10 @@ function StatusChip() {
 }
 
 export default function Scene() {
+  useEffect(() => {
+    warmVoices();
+  }, []);
+
   return (
     <div className="relative h-full w-full">
       <Canvas
@@ -48,26 +54,27 @@ export default function Scene() {
           alpha: false,
           powerPreference: "high-performance",
         }}
-        style={{ background: "#0a0a0f" }}
+        style={{ background: "#0c0c12" }}
       >
         <PerspectiveCamera
           makeDefault
-          position={[0, 1.55, 2.15]}
-          fov={32}
+          position={[0, 1.5, 2.35]}
+          fov={34}
           near={0.1}
           far={50}
         />
 
         <Suspense fallback={null}>
           <StudioLighting />
-          <Environment preset="city" environmentIntensity={0.32} />
+          <Environment preset="apartment" environmentIntensity={0.28} />
+          <StudioSet />
           <Avatar />
           <ContactShadows
-            position={[0, 0, 0]}
-            opacity={0.4}
-            scale={6}
-            blur={2.2}
-            far={2.5}
+            position={[0, 0.01, 0]}
+            opacity={0.55}
+            scale={5}
+            blur={2.8}
+            far={3}
           />
         </Suspense>
       </Canvas>
@@ -78,7 +85,7 @@ export default function Scene() {
             PRESENCE
           </h1>
           <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[10px] uppercase tracking-widest text-white/40">
-            Module 4
+            Studio
           </span>
         </div>
 
