@@ -9,77 +9,74 @@ Zero-UI 3D digital human that replaces traditional chatbot interfaces with a rea
 
 ## Current Status
 
-**Module 1 — 3D Stage & Expressive Avatar is largely complete.**
+**Module 1** ✅ complete foundation  
+**Module 2** ✅ Phone Mechanic + FSM body language (procedural poses; Mixamo clips next)
 
-- Production studio lighting (key + fill + rim + ambient + hemisphere)
-- Free full-body avatar (TalkingHead `brunette.glb`) with full ARKit 52 + Oculus 15 visemes
-- Automatic eye-blink loop
-- Emotion morph blending (neutral, happy, thoughtful, curious, focused, amused) driven by Zustand store
-- Idle breathing + subtle sway
-- Tighter medium close-up camera framing
-- Contact shadows + environment reflections
-- Clean immersive UI chrome
-- Zustand store + TypeScript types for the full cognitive loop already prepared
+### What works now
+- Studio-lit full-body avatar (TalkingHead, ARKit + Oculus visemes)
+- Eye-blink loop + emotion morphs
+- Animation FSM states: `IDLE_LISTENING` | `THINKING` | `SPEAKING` | `TEXTING_PHONE`
+- Procedural body language (head pitch, lean, sway) driven by FSM
+- **The Phone Mechanic** — Framer Motion slide-up chat drawer synced with avatar state
+- Floating phone toggle (bottom-right)
+- Shared message history between voice path and phone UI (store ready for Firestore)
 
-**Note:** Ready Player Me hosted CDN was discontinued January 2026. Presence uses a free, Mixamo-compatible avatar with the same morph-target standards so lip-sync and expressions remain production-grade at zero cost.
+**Note:** Ready Player Me CDN was discontinued Jan 2026. We use a free Mixamo-compatible avatar with the same morph standards.
 
 ---
 
 ## Locked MVP Scope (Strict)
 
-This repository enforces a **zero-cost, production-grade MVP**. No scope creep is allowed.
-
 ### In-Scope Modules
-1. **3D Stage & Expressive Avatar** ✅ (complete for MVP foundation)
-2. **Finite State Machine + The Phone Mechanic**
+1. **3D Stage & Expressive Avatar** ✅
+2. **Finite State Machine + The Phone Mechanic** ✅ (procedural; Mixamo polish next)
 3. **Real-Time Voice & Viseme Loop**
 4. **Invisible Multi-API Cognitive Router**
 5. **Unified Session Memory & Auth**
 
 ### Explicitly Out-of-Scope (Post-MVP only)
-- Custom user-uploaded avatars or in-app avatar editors
-- Paid video-streaming avatar services (HeyGen, D-ID, Tavus, etc.)
-- Multi-agent rooms or side-by-side model comparison
-- Native iOS / Android apps (MVP is responsive WebGL PWA)
-- Any paid API tier or paid hosting
+- Custom avatar upload / in-app editors
+- Paid video avatar APIs (HeyGen, D-ID, Tavus)
+- Multi-agent rooms / model comparison grids
+- Native iOS / Android apps
+- Any paid API or hosting tier
 
 ---
 
 ## Production-Grade Free Tech Stack
 
-| Layer              | Technology                                      | Notes |
-|--------------------|--------------------------------------------------|-------|
-| Framework          | Next.js 15 (App Router)                          | — |
-| 3D                 | React Three Fiber + Drei + Postprocessing        | Studio lighting, high visual quality |
-| Avatar             | TalkingHead brunette.glb (free)                  | ARKit 52 + Oculus Visemes, Mixamo rig |
-| Animations         | Mixamo FBX → GLTF                                | 4 core states (next) |
-| Lip-sync           | wawa-lipsync                                     | Real-time Web Audio, 60 fps |
-| STT                | Browser Web Speech API + optional Gemini Live    | Free |
-| TTS                | Google Cloud Text-to-Speech (Neural2)            | 1 M free characters / month |
-| Cognitive Router   | Gemini Flash (primary) + Groq + OpenRouter Free  | Single persona, structured output |
-| Auth & Database    | Firebase Spark (Google Auth + Firestore)         | Free |
-| Hosting            | Vercel Free Tier                                 | — |
-
-**Quality Bar**  
-Graphics, animation smoothness, lip-sync fidelity, UI polish, and perceived latency must feel production-ready even while staying entirely on free tiers.
+| Layer | Technology | Notes |
+|-------|------------|-------|
+| Framework | Next.js 15 (App Router) | — |
+| 3D | React Three Fiber + Drei | Studio lighting |
+| Avatar | TalkingHead brunette.glb | ARKit 52 + Oculus Visemes |
+| UI motion | Framer Motion | Phone Mechanic drawer |
+| State | Zustand | Unified avatar + chat |
+| Lip-sync | wawa-lipsync `^0.0.2` | Module 3 |
+| STT / TTS | Web Speech + Google Cloud TTS free | Module 3 |
+| Router | Gemini Flash + Groq + OpenRouter free | Module 4 |
+| Auth / DB | Firebase Spark | Module 5 |
+| Hosting | Vercel free | — |
 
 ---
 
-## How to Run Locally
+## How to Run
 
 ```bash
 git clone https://github.com/taimooraliwaris/presence.git
 cd presence
+git pull
 npm install
 npm run dev
 ```
 
-Open http://localhost:3000 — you should see the avatar in a dark studio with breathing, natural blinking, and emotion-ready morph targets.
+Open http://localhost:3000  
+- Avatar should blink and breathe  
+- Tap the phone icon (bottom-right) to open the chat drawer  
+- Send a message → avatar enters THINKING then TEXTING_PHONE
 
 ---
 
 ## Repository
 
 https://github.com/taimooraliwaris/presence
-
-Actively developed by the R&D lead. All implementation decisions are locked to the scope above.
