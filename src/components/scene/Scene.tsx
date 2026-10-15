@@ -78,7 +78,7 @@ export default function Scene() {
             PRESENCE
           </h1>
           <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[10px] uppercase tracking-widest text-white/40">
-            Module 3
+            Module 4
           </span>
         </div>
 
