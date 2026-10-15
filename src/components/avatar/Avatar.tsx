@@ -5,17 +5,18 @@ import { useFrame } from "@react-three/fiber";
 import { useGLTF } from "@react-three/drei";
 import * as THREE from "three";
 import { usePresenceStore } from "@/lib/store";
-import type { Emotion } from "@/types/presence";
+import type { Emotion, AnimationState } from "@/types/presence";
 
 /**
  * Free full-body avatar with full ARKit 52 + Oculus 15 visemes.
- * Source: TalkingHead (met4citizen) — Mixamo-compatible rig, production-ready morph targets.
- * Ready Player Me hosted CDN was discontinued Jan 2026; we no longer depend on it.
+ * Source: TalkingHead (met4citizen) — Mixamo-compatible rig.
+ * Ready Player Me CDN discontinued Jan 2026.
+ *
+ * Body language is procedural until Mixamo clips are retargeted (Module 2).
  */
 const AVATAR_URL =
   "https://raw.githubusercontent.com/met4citizen/TalkingHead/main/avatars/brunette.glb";
 
-/** Emotion → ARKit morph target weights */
 const EMOTION_MORPHS: Record<Emotion, Record<string, number>> = {
   neutral: {},
   happy: {
@@ -56,6 +57,17 @@ const EMOTION_MORPHS: Record<Emotion, Record<string, number>> = {
   },
 };
 
+/** Target pose offsets driven by FSM state */
+const STATE_POSE: Record<
+  AnimationState,
+  { headPitch: number; lean: number; swayAmp: number }
+> = {
+  IDLE_LISTENING: { headPitch: 0, lean: 0, swayAmp: 0.012 },
+  THINKING: { headPitch: 0.08, lean: 0.03, swayAmp: 0.006 },
+  SPEAKING: { headPitch: -0.02, lean: 0.01, swayAmp: 0.01 },
+  TEXTING_PHONE: { headPitch: 0.22, lean: 0.04, swayAmp: 0.004 },
+};
+
 function findMorphMeshes(root: THREE.Object3D): THREE.Mesh[] {
   const meshes: THREE.Mesh[] = [];
   root.traverse((child) => {
@@ -85,15 +97,30 @@ function setMorph(
   }
 }
 
+function findBone(root: THREE.Object3D, names: string[]): THREE.Object3D | null {
+  let found: THREE.Object3D | null = null;
+  root.traverse((child) => {
+    if (found) return;
+    const n = child.name.toLowerCase();
+    if (names.some((name) => n.includes(name.toLowerCase()))) {
+      found = child;
+    }
+  });
+  return found;
+}
+
 export function Avatar() {
   const group = useRef<THREE.Group>(null);
   const morphMeshes = useRef<THREE.Mesh[]>([]);
+  const headBone = useRef<THREE.Object3D | null>(null);
   const blinkTimer = useRef(0);
   const nextBlink = useRef(2 + Math.random() * 3);
   const isBlinking = useRef(false);
   const blinkProgress = useRef(0);
+  const pose = useRef({ headPitch: 0, lean: 0, swayAmp: 0.012 });
 
   const emotion = usePresenceStore((s) => s.emotion);
+  const animationState = usePresenceStore((s) => s.animationState);
   const { scene } = useGLTF(AVATAR_URL);
 
   const avatar = useMemo(() => {
@@ -121,6 +148,12 @@ export function Avatar() {
 
   useEffect(() => {
     morphMeshes.current = findMorphMeshes(avatar);
+    headBone.current = findBone(avatar, [
+      "Head",
+      "mixamorigHead",
+      "head",
+      "Neck",
+    ]);
   }, [avatar]);
 
   useFrame((state, delta) => {
@@ -128,10 +161,39 @@ export function Avatar() {
     const t = state.clock.getElapsedTime();
     const meshes = morphMeshes.current;
 
-    // Idle breathing + subtle sway
+    // Smoothly approach FSM pose targets
+    const target = STATE_POSE[animationState] ?? STATE_POSE.IDLE_LISTENING;
+    pose.current.headPitch = THREE.MathUtils.lerp(
+      pose.current.headPitch,
+      target.headPitch,
+      0.08
+    );
+    pose.current.lean = THREE.MathUtils.lerp(
+      pose.current.lean,
+      target.lean,
+      0.08
+    );
+    pose.current.swayAmp = THREE.MathUtils.lerp(
+      pose.current.swayAmp,
+      target.swayAmp,
+      0.08
+    );
+
+    // Idle breathing + state-aware sway
     const breath = Math.sin(t * 1.15) * 0.006;
     group.current.position.y = -0.95 + breath;
-    group.current.rotation.y = Math.sin(t * 0.28) * 0.012;
+    group.current.rotation.y =
+      Math.sin(t * 0.28) * pose.current.swayAmp + pose.current.lean * 0.3;
+    group.current.rotation.x = pose.current.lean * 0.15;
+
+    // Head pitch for TEXTING / THINKING
+    if (headBone.current) {
+      headBone.current.rotation.x = THREE.MathUtils.lerp(
+        headBone.current.rotation.x,
+        pose.current.headPitch,
+        0.1
+      );
+    }
 
     // Eye blink loop
     blinkTimer.current += delta;
@@ -155,15 +217,15 @@ export function Avatar() {
       setMorph(meshes, "eyeBlinkRight", blinkVal, 0.35);
     }
 
-    // Emotion morphs (smooth lerp)
+    // Emotion morphs
     const targets = EMOTION_MORPHS[emotion] || {};
     const allEmotionKeys = new Set<string>();
     Object.values(EMOTION_MORPHS).forEach((m) =>
       Object.keys(m).forEach((k) => allEmotionKeys.add(k))
     );
     allEmotionKeys.forEach((key) => {
-      const target = targets[key] ?? 0;
-      setMorph(meshes, key, target, 0.08);
+      const val = targets[key] ?? 0;
+      setMorph(meshes, key, val, 0.08);
     });
   });
 
